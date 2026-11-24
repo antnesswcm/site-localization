@@ -38,3 +38,8 @@
 **/*.pem
 **/*.key
 **/.DS_Store
+
+# Keep root-local assets and worktrees ignored even if whitelist rules grow.
+/.del/
+/.local/
+/.worktrees/

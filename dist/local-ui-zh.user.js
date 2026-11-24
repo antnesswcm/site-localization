@@ -283,7 +283,7 @@
       if (button.firstChild) button.firstChild.nodeValue = label;
       else button.appendChild(doc.createTextNode(label));
       button.setAttribute('aria-pressed', String(enabled));
-      const help = '拖动贴边；Alt+方向键调整位置 / Drag to dock; Alt+arrow keys to reposition';
+      const help = '拖动贴边；点击切换语言 / Drag to dock; click to switch language';
       button.setAttribute('aria-label', label + '；' + help);
       button.title = '本地界面翻译 / Local UI translation；' + help;
       placeButton();
@@ -293,6 +293,13 @@
       if (!button) {
         button = doc.createElement('button');
         button.type = 'button';
+        button.tabIndex = -1;
+        // Pointer-only control: localization is not a frequent keyboard action.
+        const blockActivation = event => {
+          if (event.key === 'Enter' || event.key === ' ') event.preventDefault();
+        };
+        button.addEventListener('keydown', blockActivation);
+        button.addEventListener('keyup', blockActivation);
         button.setAttribute('data-local-ui-translator', adapter.id);
         button.style.cssText = 'position:fixed;left:0;top:0;max-width:100vw;max-height:100vh;box-sizing:border-box;z-index:2147483647;padding:8px 12px;border:1px solid #777;border-radius:8px;background:#fff;color:#222;font:13px system-ui;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 8px #0003;';
         button.addEventListener('click', event => {
@@ -311,16 +318,6 @@
           global.addEventListener('pointercancel', endDrag);
         });
         button.addEventListener('lostpointercapture', endDrag);
-        button.addEventListener('keydown', event => {
-          if (!event.altKey || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
-          event.preventDefault();
-          endDrag(null);
-          if (event.key === 'ArrowLeft') position.side = 'left';
-          else if (event.key === 'ArrowRight') position.side = 'right';
-          else position.y = Math.max(0, Math.min(1, position.y + (event.key === 'ArrowUp' ? -0.05 : 0.05)));
-          placeButton();
-          savePosition();
-        });
         updateButton();
       }
       if (!button.isConnected) {

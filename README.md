@@ -22,7 +22,7 @@ A local, dependency-free userscript framework for site-specific Chinese UI local
 
 - 默认贴右边中部；鼠标或触屏拖动后，松手吸附最近的左/右边缘。
 - 普通点击切换语言；超过6px的拖动不会误触切换。
-- 按 Tab 聚焦后，`Alt+←/→` 换边，`Alt+↑/↓` 每次调整纵向范围的5%；Enter/空格正常切换。
+- 仅支持鼠标/触屏操作；开关 `tabIndex=-1`，不进入 Tab 顺序，不提供 Alt 调位或 Enter/空格切换。
 - 位置按“左右边 + 归一化高度”保存在 `local-ui-translator:toggle-position`。同 origin 的不同站点配置共享位置，跨域不共享；语言偏好仍按原站点 id 保存。
 - 窗口缩放保持控件可见，主体替换重挂载，停止时取消拖动并清理监听。存储禁用/损坏不影响使用。
 - 使用 layout viewport；目标页面强制 CSS、祖先 transform、移动端软键盘/visual viewport 的特殊影响尚不保证。
@@ -89,7 +89,9 @@ node build.mjs --site tailscale-zh-cn
 
 公开仓库：[antnesswcm/site-localization](<https://github.com/antnesswcm/site-localization>)。默认分支 `main`。
 
-原型与真实浏览器记录保留在本地，但 [发布白名单](<.gitignore>) 不将其纳入 Git。公共测试只使用合成数据，不提交个人账户、截图、绝对路径或测试结果档案。
+根项目内 `.del/` 存放废弃资产（只移动、不删除），`.local/` 存放仍有用的本地测试、截图、预览和日志，`.worktrees/` 存放 git worktree 功能分支；三者均由 [发布白名单](<.gitignore>) 明确忽略，不提交。worktree 从主仓库根创建以避免递归，迁移使用 `git worktree move`。功能维护遵循 Issue → worktree → PR，不自动合并，并保留分支与 worktree。
+
+UI/UX 改动必须提供本地预览供用户亲自验收，自动测试不能替代用户确认；本地预览不提交，可复用的匿名 fixture 可以提交。公共测试只使用合成数据，不提交个人账户、真实页面截图、绝对路径或私有测试结果。
 
 实现与当前配置为独立原创，[MIT 许可证](<LICENSE>)。参考了 [github-chinese](<https://github.com/maboloshi/github-chinese>) 的分离维护思路，未复制其 GPL 实现或词库；用户提供的 [旧 Tailscale 脚本](<https://github.com/gxdung/tailscale-cn/blob/main/tailscale-translator.user.js>) 未发现许可证，也未复制其源码或词库。
 
