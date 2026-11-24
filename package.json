@@ -1,0 +1,15 @@
+{
+  "name": "site-localization",
+  "displayName": "站点汉化 / Site Localization",
+  "version": "0.2.1",
+  "description": "A local, dependency-free userscript framework with complete site-specific Chinese localization configurations.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node tests/framework-tests.mjs && node --test tests/build.test.mjs",
+    "check": "npm run build && npm test && node --check dist/local-ui-zh.user.js"
+  }
+}
