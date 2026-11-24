@@ -7,11 +7,40 @@
 // @match        https://console.tailscale.com/admin/*
 // @match        https://login.tailscale.com/admin/*
 // @run-at       document-idle
-// @grant        none
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @sandbox      raw
 // ==/UserScript==
 
 (function(){
 "use strict";
+// SPDX-License-Identifier: MIT
+// One userscript-scoped value across origins. Read on instance start; no listeners.
+(function (global) {
+  const key = 'local-ui-translator:toggle-position';
+  function valid(value) {
+    return !!value && (value.side === 'left' || value.side === 'right') &&
+      typeof value.y === 'number' && Number.isFinite(value.y) && value.y >= 0 && value.y <= 1;
+  }
+  global.__localUiPositionStore = Object.freeze({
+    read() {
+      try {
+        if (typeof GM_getValue !== 'function') return null;
+        const value = GM_getValue(key, null);
+        return valid(value) ? { side: value.side, y: value.y } : null;
+      } catch (_) { return null; }
+    },
+    write(value) {
+      if (!valid(value)) return false;
+      try {
+        if (typeof GM_setValue !== 'function') return false;
+        GM_setValue(key, { side: value.side, y: value.y });
+        return true;
+      } catch (_) { return false; }
+    }
+  });
+})(window);
+
 /* SPDX-License-Identifier: MIT
  * Original local DOM translator. No network requests or third-party dependencies.
  * Load this script, then call installTranslator(a trusted local adapter).
@@ -62,12 +91,15 @@
     let stopped = false;
     let frame = null;
     let button = null;
-    const positionKey = 'local-ui-translator:toggle-position';
     let position = { side: 'right', y: 0.5 };
     let drag = null;
     let suppressClick = false;
+    let colorScheme = null;
+    try { colorScheme = global.matchMedia('(prefers-color-scheme: dark)'); } catch (_) { /* Light colors remain usable. */ }
     try {
-      const saved = JSON.parse(global.localStorage.getItem(positionKey));
+      // The userscript-level store owns local-ui-translator:toggle-position.
+      // Origin-local storage cannot provide the shared cross-site position.
+      const saved = global.__localUiPositionStore?.read();
       if (saved && (saved.side === 'left' || saved.side === 'right') &&
           typeof saved.y === 'number' && Number.isFinite(saved.y) && saved.y >= 0 && saved.y <= 1) {
         position = { side: saved.side, y: saved.y };
@@ -236,16 +268,26 @@
       const height = global.innerHeight;
       const x = Math.max(0, width - button.offsetWidth);
       const y = Math.max(0, height - button.offsetHeight);
-      return { x, y, insetX: Math.min(8, x / 2), insetY: Math.min(8, y / 2) };
+      return { x, y };
     }
     function placeButton() {
       if (!button || !button.isConnected || drag) return;
       const b = bounds();
-      button.style.left = (position.side === 'left' ? b.insetX : b.x - b.insetX) + 'px';
-      button.style.top = (b.insetY + position.y * (b.y - 2 * b.insetY)) + 'px';
+      button.style.left = (position.side === 'left' ? 0 : b.x) + 'px';
+      button.style.top = (position.y * b.y) + 'px';
+      button.style.borderRadius = position.side === 'left' ? '0 50% 50% 0' : '50% 0 0 50%';
+      button.style.cursor = 'grab';
     }
     function savePosition() {
-      try { global.localStorage.setItem(positionKey, JSON.stringify(position)); } catch (_) { /* Storage is optional. */ }
+      try { global.__localUiPositionStore?.write({ ...position }); } catch (_) { /* Storage is optional. */ }
+    }
+    function updateColors() {
+      if (!button) return;
+      const dark = !!colorScheme?.matches;
+      button.style.backgroundColor = dark ? '#252a32' : '#f8fafc';
+      button.style.color = dark ? '#f1f5f9' : '#202938';
+      button.style.borderColor = dark ? '#8993a3' : '#697586';
+      button.style.boxShadow = dark ? '0 2px 8px #0006' : '0 2px 8px #0003';
     }
     function endDrag(event, save = true) {
       if (!drag || (event && event.pointerId !== drag.id)) return;
@@ -259,7 +301,7 @@
         const b = bounds();
         const rect = button.getBoundingClientRect();
         position.side = rect.left + rect.width / 2 < global.innerWidth / 2 ? 'left' : 'right';
-        position.y = b.y > 2 * b.insetY ? Math.max(0, Math.min(1, (rect.top - b.insetY) / (b.y - 2 * b.insetY))) : 0.5;
+        position.y = b.y > 0 ? Math.max(0, Math.min(1, rect.top / b.y)) : 0.5;
         suppressClick = true;
         if (save) savePosition();
       }
@@ -279,13 +321,14 @@
     function resizeButton() { endDrag(null); placeButton(); }
     function updateButton() {
       if (!button) return;
-      const label = enabled ? '中文 · 切换 English' : 'English · 切换中文';
+      const label = enabled ? '原' : '汉';
       if (button.firstChild) button.firstChild.nodeValue = label;
       else button.appendChild(doc.createTextNode(label));
       button.setAttribute('aria-pressed', String(enabled));
       const help = '拖动贴边；点击切换语言 / Drag to dock; click to switch language';
-      button.setAttribute('aria-label', label + '；' + help);
-      button.title = '本地界面翻译 / Local UI translation；' + help;
+      const action = enabled ? '恢复英文 / Restore English' : '汉化界面 / Translate to Chinese';
+      button.setAttribute('aria-label', action + '；' + help);
+      button.title = action + '；' + help;
       placeButton();
     }
     function ensureButton() {
@@ -301,7 +344,9 @@
         button.addEventListener('keydown', blockActivation);
         button.addEventListener('keyup', blockActivation);
         button.setAttribute('data-local-ui-translator', adapter.id);
-        button.style.cssText = 'position:fixed;left:0;top:0;max-width:100vw;max-height:100vh;box-sizing:border-box;z-index:2147483647;padding:8px 12px;border:1px solid #777;border-radius:8px;background:#fff;color:#222;font:13px system-ui;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 8px #0003;';
+        button.style.cssText = 'position:fixed;left:0;top:0;width:44px;height:44px;min-width:0;min-height:0;max-width:100vw;max-height:100vh;box-sizing:border-box;z-index:2147483647;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border:1px solid #697586;border-radius:50%;background:#f8fafc;color:#202938;font:600 20px/1 system-ui;appearance:none;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 8px #0003;';
+        updateColors();
+        colorScheme?.addEventListener('change', updateColors);
         button.addEventListener('click', event => {
           if (suppressClick && event.detail !== 0) { suppressClick = false; event.preventDefault(); return; }
           suppressClick = false;
@@ -312,6 +357,8 @@
           suppressClick = false;
           const rect = button.getBoundingClientRect();
           drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
+          button.style.borderRadius = '50%';
+          button.style.cursor = 'grabbing';
           try { button.setPointerCapture(event.pointerId); } catch (_) { /* Window listeners still track the gesture. */ }
           global.addEventListener('pointermove', moveDrag, { passive: false });
           global.addEventListener('pointerup', endDrag);
@@ -358,6 +405,7 @@
         global.removeEventListener('popstate', refresh);
         global.removeEventListener('hashchange', refresh);
         global.removeEventListener('resize', resizeButton);
+        colorScheme?.removeEventListener('change', updateColors);
         endDrag(null, false);
         doc.removeEventListener('DOMContentLoaded', refresh);
         if (button) button.remove();

@@ -20,12 +20,14 @@ A local, dependency-free userscript framework for site-specific Chinese UI local
 
 这是通用框架 UI，不使用目标站点的布局/选择器配置：
 
-- 默认贴右边中部；鼠标或触屏拖动后，松手吸附最近的左/右边缘。
-- 普通点击切换语言；超过6px的拖动不会误触切换。
-- 仅支持鼠标/触屏操作；开关 `tabIndex=-1`，不进入 Tab 顺序，不提供 Alt 调位或 Enter/空格切换。
-- 位置按“左右边 + 归一化高度”保存在 `local-ui-translator:toggle-position`。同 origin 的不同站点配置共享位置，跨域不共享；语言偏好仍按原站点 id 保存。
+- 44px「汉/原」贴边球，默认贴右边中部，与视口边缘间距为0px；拖动时为圆形，贴边后外侧平直、内侧圆弧。颜色跟随系统 light/dark。
+- 鼠标或触屏拖动后，松手吸附最近的左/右边缘；普通点击切换语言，超过6px的拖动不会误触切换。
+- 仅支持指针（鼠标/触屏）操作；开关 `tabIndex=-1`，不进入 Tab 顺序，不提供 Alt 调位或 Enter/空格切换。
+- 位置按“左右边 + 归一化高度”通过 `GM_getValue` / `GM_setValue` 保存到同一个脚本级键 `local-ui-translator:toggle-position`，供支持站点共享。装载时读取一次，拖动释放时保存，不实时同步其他已打开窗口；没有按 origin 的存储回退。语言偏好仍使用原站点 id 与兼容键，不随位置存储改动。
 - 窗口缩放保持控件可见，主体替换重挂载，停止时取消拖动并清理监听。存储禁用/损坏不影响使用。
 - 使用 layout viewport；目标页面强制 CSS、祖先 transform、移动端软键盘/visual viewport 的特殊影响尚不保证。
+
+当前产物声明 `@sandbox raw` 及 `GM_getValue` / `GM_setValue` 授权，但尚未在真实油猴安装中验证此组合。离线50/50、Ego匿名检查34/34及两域本地 mock 预览的实际鼠标检查通过，只是本地证据，不是实装或真实 GM 跨站验收；详情见 [测试记录](<TESTING.md>)。
 
 ## 两类开发对象
 
@@ -91,7 +93,9 @@ node build.mjs --site tailscale-zh-cn
 
 根项目内 `.del/` 存放废弃资产（只移动、不删除），`.local/` 存放仍有用的本地测试、截图、预览和日志，`.worktrees/` 存放 git worktree 功能分支；三者均由 [发布白名单](<.gitignore>) 明确忽略，不提交。worktree 从主仓库根创建以避免递归，迁移使用 `git worktree move`。功能维护遵循 Issue → worktree → PR，不自动合并，并保留分支与 worktree。
 
-UI/UX 改动必须提供本地预览供用户亲自验收，自动测试不能替代用户确认；本地预览不提交，可复用的匿名 fixture 可以提交。公共测试只使用合成数据，不提交个人账户、真实页面截图、绝对路径或私有测试结果。
+UI/UX 改动必须提供本地预览供用户亲自验收，自动测试不能替代用户确认；未验收保持 `nomerge`，不自动合并。本地预览不提交，可复用的匿名 fixture 可以提交。公共测试只使用合成数据，不提交个人账户、真实页面截图、绝对路径或私有测试结果。
+
+Issue 聚焦专业、具体的需求或 bug 与可检验验收条件，不写模板空话；任务变更及时更新。项目规范、UI/UX 用户验收原则、文件夹结构与资产归属写项目文档，不塞入 Issue；详见 [维护规范](<AGENTS.md>)。
 
 实现与当前配置为独立原创，[MIT 许可证](<LICENSE>)。参考了 [github-chinese](<https://github.com/maboloshi/github-chinese>) 的分离维护思路，未复制其 GPL 实现或词库；用户提供的 [旧 Tailscale 脚本](<https://github.com/gxdung/tailscale-cn/blob/main/tailscale-translator.user.js>) 未发现许可证，也未复制其源码或词库。
 

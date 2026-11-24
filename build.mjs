@@ -13,6 +13,7 @@ if (!configs.length) throw new Error('No matching site configuration.');
 const packed=JSON.stringify(configs);
 const engine=await readFile(new URL('src/engine.js',root),'utf8');
 const runtime=await readFile(new URL('src/framework/runtime.js',root),'utf8');
+const positionStore=await readFile(new URL('src/framework/position-store.js',root),'utf8');
 const matches=[...new Set(configs.flatMap(config=>config.matches))];
 const metadata=`// ==UserScript==
 // @name         ${project.displayName}${args.length?' · '+configs[0].id:''}
@@ -22,10 +23,12 @@ const metadata=`// ==UserScript==
 // @license      MIT
 ${matches.map(match=>'// @match        '+match).join('\n')}
 // @run-at       document-idle
-// @grant        none
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @sandbox      raw
 // ==/UserScript==
 `;
-const output=metadata+'\n(function(){\n"use strict";\n'+engine+'\n'+runtime+'\nwindow.startLocalUiFramework('+packed+');\n})();\n';
+const output=metadata+'\n(function(){\n"use strict";\n'+positionStore+'\n'+engine+'\n'+runtime+'\nwindow.startLocalUiFramework('+packed+');\n})();\n';
 const artifact=args.length ? 'dist/local-ui-zh.'+configs[0].id+'.user.js' : 'dist/local-ui-zh.user.js';
 await mkdir(new URL('dist/',root),{recursive:true});
 await writeFile(new URL(artifact,root),output);

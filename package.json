@@ -9,7 +9,7 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "build": "node build.mjs",
-    "test": "node tests/framework-tests.mjs && node --test tests/build.test.mjs",
+    "test": "node tests/framework-tests.mjs && node --test tests/build.test.mjs tests/position-store.test.mjs",
     "check": "npm run build && npm test && node --check dist/local-ui-zh.user.js"
   }
 }
