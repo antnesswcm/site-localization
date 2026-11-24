@@ -20,14 +20,14 @@ A local, dependency-free userscript framework for site-specific Chinese UI local
 
 这是通用框架 UI，不使用目标站点的布局/选择器配置：
 
-- 44px「汉/原」贴边球，默认贴右边中部，与视口边缘间距为0px；拖动时为圆形，贴边后外侧平直、内侧圆弧。颜色跟随系统 light/dark。
-- 鼠标或触屏拖动后，松手吸附最近的左/右边缘；普通点击切换语言，超过6px的拖动不会误触切换。
+- 外层36px「汉/原」贴边控件，默认贴右边中部，与视口边缘间距为0px；外层拖动时为圆形，贴边后外侧平直、内侧圆弧。内层使用独立26px圆形 `span` 底座承载标识，始终保持圆形，文字17px；粉色深浅方案跟随系统 light/dark。
+- 鼠标或触屏拖动后，松手吸附最近的左/右边缘；普通点击切换语言，超过6px的拖动不会误触切换。静止及按下但未跨越6px拖动阈值时使用 `pointer`，实际拖动时使用 `crosshair`，释放后恢复 `pointer`；不使用 `grab` / `grabbing`。
 - 仅支持指针（鼠标/触屏）操作；开关 `tabIndex=-1`，不进入 Tab 顺序，不提供 Alt 调位或 Enter/空格切换。
 - 位置按“左右边 + 归一化高度”通过 `GM_getValue` / `GM_setValue` 保存到同一个脚本级键 `local-ui-translator:toggle-position`，供支持站点共享。装载时读取一次，拖动释放时保存，不实时同步其他已打开窗口；没有按 origin 的存储回退。语言偏好仍使用原站点 id 与兼容键，不随位置存储改动。
 - 窗口缩放保持控件可见，主体替换重挂载，停止时取消拖动并清理监听。存储禁用/损坏不影响使用。
 - 使用 layout viewport；目标页面强制 CSS、祖先 transform、移动端软键盘/visual viewport 的特殊影响尚不保证。
 
-当前产物声明 `@sandbox raw` 及 `GM_getValue` / `GM_setValue` 授权，但尚未在真实油猴安装中验证此组合。离线50/50、Ego匿名检查34/34及两域本地 mock 预览的实际鼠标检查通过，只是本地证据，不是实装或真实 GM 跨站验收；详情见 [测试记录](<TESTING.md>)。
+当前产物声明 `@sandbox raw` 及 `GM_getValue` / `GM_setValue` 授权，但尚未在真实油猴安装中验证此组合。此前44px方案的离线50/50、Ego匿名检查34/34及两域本地 mock 实际鼠标检查是历史本地证据，不是本轮结果，也不是实装或真实 GM 跨站验收。据主 agent 本轮实测反馈，36px外层、26px圆形底座及光标调整的离线50/50、Ego匿名40/40和原生鼠标光标/拖动点击检查通过；390×844双层球截图已由 agent 检视，用户 UI/UX 验收仍待确认；详情见 [测试记录](<TESTING.md>)。
 
 ## 两类开发对象
 

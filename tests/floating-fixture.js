@@ -49,6 +49,10 @@ window.runFloatingControlTests = async function () {
     check('default vertical center', close(rect().top + rect().height / 2, innerHeight / 2));
     check('right dock has square outer and semicircular inner corners', shape('right'));
     check('docked control has equal positive width and height', rect().width > 0 && close(rect().width, rect().height));
+    check('compact outer control is 36px', close(rect().width, 36) && close(rect().height, 36));
+    const logo = button().querySelector('[data-local-ui-logo]');
+    check('independent logo carrier is smaller 26px circle', !!logo && close(logo.getBoundingClientRect().width, 26) && close(logo.getBoundingClientRect().height, 26) && getComputedStyle(logo).borderRadius === '50%');
+    check('resting control uses pointer cursor', getComputedStyle(button()).cursor === 'pointer');
     check('enabled control offers restore with 原', api.enabled && button().textContent === '原' && button().getAttribute('aria-pressed') === 'true');
     check('touch scroll disabled only on control', button().style.touchAction === 'none' && document.body.style.touchAction !== 'none');
     check('pointer-only instructions', button().getAttribute('aria-label').includes('Drag to dock') && !button().getAttribute('aria-label').includes('Alt+'));
@@ -59,13 +63,17 @@ window.runFloatingControlTests = async function () {
     check('click 汉 enables localization and offers 原', api.enabled && button().textContent === '原' && values.get('local-ui-translator:float-one') === 'on');
     const start = rect();
     pointer(button(), 'pointerdown', start.left + start.width / 2, start.top + start.height / 2);
+    pointer(window, 'pointermove', start.left + start.width / 2 + 2, start.top + start.height / 2);
+    check('subthreshold press retains pointer cursor', getComputedStyle(button()).cursor === 'pointer');
     pointer(window, 'pointermove', 20, 100);
+    check('active drag uses crosshair while inner carrier stays circular', getComputedStyle(button()).cursor === 'crosshair' && getComputedStyle(logo).borderRadius === '50%');
     check('dragging control is circular with equal dimensions', shape('circle') && close(rect().width, rect().height));
     check('drag movement does not save or reread position', writes.length === 0 && reads === 1);
     pointer(window, 'pointerup', 20, 100);
     button().dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
     check('dragNoClick leaves language enabled', api.enabled && button().textContent === '原');
     check('touch release docks left at exactly 0px', close(rect().left, 0));
+    check('release restores pointer cursor', getComputedStyle(button()).cursor === 'pointer');
     check('left dock has square outer and semicircular inner corners', shape('left'));
     check('release saves one normalized shared position', writes.length === 1 && sharedPosition.side === 'left' && sharedPosition.y >= 0 && sharedPosition.y <= 1);
     check('position never written to language localStorage', !values.has(positionKey));

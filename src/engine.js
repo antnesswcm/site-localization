@@ -233,7 +233,7 @@
       button.style.left = (position.side === 'left' ? 0 : b.x) + 'px';
       button.style.top = (position.y * b.y) + 'px';
       button.style.borderRadius = position.side === 'left' ? '0 50% 50% 0' : '50% 0 0 50%';
-      button.style.cursor = 'grab';
+      button.style.cursor = 'pointer';
     }
     function savePosition() {
       try { global.__localUiPositionStore?.write({ ...position }); } catch (_) { /* Storage is optional. */ }
@@ -244,7 +244,12 @@
       button.style.backgroundColor = dark ? '#252a32' : '#f8fafc';
       button.style.color = dark ? '#f1f5f9' : '#202938';
       button.style.borderColor = dark ? '#8993a3' : '#697586';
-      button.style.boxShadow = dark ? '0 2px 8px #0006' : '0 2px 8px #0003';
+      button.style.boxShadow = dark ? '0 2px 6px #0006' : '0 2px 6px #0003';
+      const logo = button.firstElementChild;
+      if (logo) {
+        logo.style.backgroundColor = dark ? '#8b4165' : '#f3b6d0';
+        logo.style.color = dark ? '#fff7fb' : '#3c2030';
+      }
     }
     function endDrag(event, save = true) {
       if (!drag || (event && event.pointerId !== drag.id)) return;
@@ -270,6 +275,7 @@
       const dy = event.clientY - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 6) return;
       drag.moved = true;
+      button.style.cursor = 'crosshair';
       event.preventDefault();
       const b = bounds();
       button.style.left = Math.max(0, Math.min(b.x, drag.left + dx)) + 'px';
@@ -279,8 +285,8 @@
     function updateButton() {
       if (!button) return;
       const label = enabled ? '原' : '汉';
-      if (button.firstChild) button.firstChild.nodeValue = label;
-      else button.appendChild(doc.createTextNode(label));
+      const logo = button.firstElementChild;
+      if (logo?.firstChild) logo.firstChild.nodeValue = label;
       button.setAttribute('aria-pressed', String(enabled));
       const help = '拖动贴边；点击切换语言 / Drag to dock; click to switch language';
       const action = enabled ? '恢复英文 / Restore English' : '汉化界面 / Translate to Chinese';
@@ -301,7 +307,13 @@
         button.addEventListener('keydown', blockActivation);
         button.addEventListener('keyup', blockActivation);
         button.setAttribute('data-local-ui-translator', adapter.id);
-        button.style.cssText = 'position:fixed;left:0;top:0;width:44px;height:44px;min-width:0;min-height:0;max-width:100vw;max-height:100vh;box-sizing:border-box;z-index:2147483647;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border:1px solid #697586;border-radius:50%;background:#f8fafc;color:#202938;font:600 20px/1 system-ui;appearance:none;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 8px #0003;';
+        button.style.cssText = 'position:fixed;left:0;top:0;width:36px;height:36px;min-width:0;min-height:0;max-width:100vw;max-height:100vh;box-sizing:border-box;z-index:2147483647;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border:1px solid #697586;border-radius:50%;background:#f8fafc;color:#202938;font:600 20px/1 system-ui;appearance:none;cursor:pointer;touch-action:none;user-select:none;box-shadow:0 2px 8px #0003;';
+        const logo = doc.createElement('span');
+        logo.setAttribute('data-local-ui-logo', '');
+        logo.setAttribute('aria-hidden', 'true');
+        logo.style.cssText = 'display:flex;align-items:center;justify-content:center;width:26px;height:26px;min-width:26px;min-height:26px;box-sizing:border-box;border:0;border-radius:50%;padding:0;margin:0;font:600 17px/1 system-ui;pointer-events:none;';
+        logo.appendChild(doc.createTextNode(enabled ? '原' : '汉'));
+        button.appendChild(logo);
         updateColors();
         colorScheme?.addEventListener('change', updateColors);
         button.addEventListener('click', event => {
@@ -315,7 +327,7 @@
           const rect = button.getBoundingClientRect();
           drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
           button.style.borderRadius = '50%';
-          button.style.cursor = 'grabbing';
+          button.style.cursor = 'pointer';
           try { button.setPointerCapture(event.pointerId); } catch (_) { /* Window listeners still track the gesture. */ }
           global.addEventListener('pointermove', moveDrag, { passive: false });
           global.addEventListener('pointerup', endDrag);
