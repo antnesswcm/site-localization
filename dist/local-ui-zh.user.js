@@ -290,8 +290,8 @@
       button.style.boxShadow = dark ? '0 2px 6px #0006' : '0 2px 6px #0003';
       const logo = button.firstElementChild;
       if (logo) {
-        logo.style.backgroundColor = dark ? '#8b4165' : '#f3b6d0';
-        logo.style.color = dark ? '#fff7fb' : '#3c2030';
+        logo.style.backgroundColor = '#ED6D8F';
+        logo.style.color = '#3c2030';
       }
     }
     function endDrag(event, save = true) {
@@ -318,6 +318,7 @@
       const dy = event.clientY - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 6) return;
       drag.moved = true;
+      button.style.borderRadius = '50%';
       button.style.cursor = 'crosshair';
       event.preventDefault();
       const b = bounds();
@@ -354,7 +355,7 @@
         const logo = doc.createElement('span');
         logo.setAttribute('data-local-ui-logo', '');
         logo.setAttribute('aria-hidden', 'true');
-        logo.style.cssText = 'display:flex;align-items:center;justify-content:center;width:26px;height:26px;min-width:26px;min-height:26px;box-sizing:border-box;border:0;border-radius:50%;padding:0;margin:0;font:600 17px/1 system-ui;pointer-events:none;';
+        logo.style.cssText = 'display:flex;align-items:center;justify-content:center;width:26px;height:26px;min-width:26px;min-height:26px;box-sizing:border-box;border:0;border-radius:50%;padding:0;margin:0;font:500 14px/1 "Microsoft YaHei","PingFang SC",sans-serif;text-align:center;pointer-events:none;';
         logo.appendChild(doc.createTextNode(enabled ? '原' : '汉'));
         button.appendChild(logo);
         updateColors();
@@ -369,7 +370,6 @@
           suppressClick = false;
           const rect = button.getBoundingClientRect();
           drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
-          button.style.borderRadius = '50%';
           button.style.cursor = 'pointer';
           try { button.setPointerCapture(event.pointerId); } catch (_) { /* Window listeners still track the gesture. */ }
           global.addEventListener('pointermove', moveDrag, { passive: false });

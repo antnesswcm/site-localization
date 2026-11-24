@@ -53,10 +53,17 @@ window.runFloatingControlTests = async function () {
     const logo = button().querySelector('[data-local-ui-logo]');
     check('independent logo carrier is smaller 26px circle', !!logo && close(logo.getBoundingClientRect().width, 26) && close(logo.getBoundingClientRect().height, 26) && getComputedStyle(logo).borderRadius === '50%');
     check('resting control uses pointer cursor', getComputedStyle(button()).cursor === 'pointer');
+    check('logo uses requested pink and smaller text', getComputedStyle(logo).backgroundColor === 'rgb(237, 109, 143)' && getComputedStyle(logo).fontSize === '14px');
+    check('logo carrier is centered in outer control', close(logo.getBoundingClientRect().left + 13, rect().left + 18) && close(logo.getBoundingClientRect().top + 13, rect().top + 18));
     check('enabled control offers restore with 原', api.enabled && button().textContent === '原' && button().getAttribute('aria-pressed') === 'true');
     check('touch scroll disabled only on control', button().style.touchAction === 'none' && document.body.style.touchAction !== 'none');
     check('pointer-only instructions', button().getAttribute('aria-label').includes('Drag to dock') && !button().getAttribute('aria-label').includes('Alt+'));
     check('control is outside Tab order', button().tabIndex === -1);
+    const rightClick = rect();
+    pointer(button(), 'pointerdown', rightClick.left + 18, rightClick.top + 18);
+    check('right dock ordinary press retains flat outer corners', shape('right'));
+    pointer(window, 'pointerup', rightClick.left + 18, rightClick.top + 18);
+    check('right dock ordinary release retains shape and position', shape('right') && close(rect().left, rightClick.left) && close(rect().top, rightClick.top));
     button().click();
     check('click 原 restores and offers 汉', !api.enabled && button().textContent === '汉' && values.get('local-ui-translator:float-one') === 'off');
     button().click();
@@ -65,6 +72,7 @@ window.runFloatingControlTests = async function () {
     pointer(button(), 'pointerdown', start.left + start.width / 2, start.top + start.height / 2);
     pointer(window, 'pointermove', start.left + start.width / 2 + 2, start.top + start.height / 2);
     check('subthreshold press retains pointer cursor', getComputedStyle(button()).cursor === 'pointer');
+    check('subthreshold move keeps right docking shape', shape('right'));
     pointer(window, 'pointermove', 20, 100);
     check('active drag uses crosshair while inner carrier stays circular', getComputedStyle(button()).cursor === 'crosshair' && getComputedStyle(logo).borderRadius === '50%');
     check('dragging control is circular with equal dimensions', shape('circle') && close(rect().width, rect().height));
@@ -89,6 +97,11 @@ window.runFloatingControlTests = async function () {
     api.stop(); api = install('float-two');
     check('position shared across configuration ids', reads === 2 && JSON.stringify(sharedPosition) === saved && close(rect().left, 0));
     check('language preference remains isolated per configuration', api.enabled && button().textContent === '原' && values.get('local-ui-translator:float-one') === 'off' && !values.has('local-ui-translator:float-two'));
+    const leftClick = rect();
+    pointer(button(), 'pointerdown', leftClick.left + 18, leftClick.top + 18);
+    check('left dock ordinary press retains flat outer corners', shape('left'));
+    pointer(window, 'pointerup', leftClick.left + 18, leftClick.top + 18);
+    check('left dock ordinary release retains shape and position', shape('left') && close(rect().left, leftClick.left) && close(rect().top, leftClick.top));
     const open = { left: rect().left, top: rect().top };
     // Another tab/site writes the shared bridge; this installed engine must not subscribe.
     positionStore.write({ side: 'right', y: 0.75 });
