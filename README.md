@@ -43,6 +43,8 @@ A local, dependency-free userscript framework for site-specific Chinese UI local
 
 ## 开发与验证
 
+维护 agent 请先阅读 [项目维护认知](<AGENTS.md>)，对齐项目目标、框架与完整站点配置的改动粒度、安全边界及验证要求。
+
 Node.js **22+**，没有外部依赖，不需要 `npm install`。
 
 ```sh
@@ -55,7 +57,7 @@ node build.mjs --site tailscale-zh-cn
 
 [构建入口](<build.mjs>) 从 [项目元数据](<package.json>) 读取名称/版本，把框架与 [站点注册表](<src/sites/index.mjs>) 合成产物；[校验模块](<tools/validate-config.mjs>) 在构建前拒绝错误或不可序列化配置。
 
-[CI](<.github/workflows/ci.yml>) 已配置 Node.js 22/24、固定 action 提交和只读权限，检查测试与已提交产物可复现。远程仓库尚未创建，GitHub CI 尚未运行。
+[CI](<.github/workflows/ci.yml>) 已配置 Node.js 22/24、固定 action 提交和只读权限，检查测试与已提交产物可复现。推送后由 GitHub Actions 执行，实际结果请查看仓库的 Actions 页面。
 
 新增站点参考 [配置模板](<src/sites/config-template.mjs>)，先确定匹配范围、用户数据保护与语义 UI，再增加汉化并注册、构建、真实浏览器验证。详见 [贡献规范](<CONTRIBUTING.md>) 和 [测试指南](<TESTING.md>)。
 
@@ -74,7 +76,7 @@ node build.mjs --site tailscale-zh-cn
 
 ## 仓库与许可
 
-仓库名：`site-localization`。当前默认分支 `main`，仅准备本地仓库，不代表已上传 GitHub。
+公开仓库：[antnesswcm/site-localization](<https://github.com/antnesswcm/site-localization>)。默认分支 `main`。
 
 原型与真实浏览器记录保留在本地，但 [发布白名单](<.gitignore>) 不将其纳入 Git。公共测试只使用合成数据，不提交个人账户、截图、绝对路径或测试结果档案。
 
