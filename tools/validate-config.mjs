@@ -13,6 +13,17 @@ export function validateConfigurations(configurations) {
     for (const key of ['rootSelector','uiSelector','ignoreSelector','protectSelector']) {
       if (config[key] !== undefined && (typeof config[key] !== 'string' || !config[key].trim())) throw new TypeError('Invalid selector: '+key);
     }
+    if (config.theme !== undefined) {
+      const theme = config.theme;
+      if (!theme || typeof theme !== 'object' || Array.isArray(theme) ||
+          !['html', 'body'].includes(theme.root) ||
+          Object.keys(theme).some(key => !['root', 'darkClass', 'lightClass', 'useColorScheme'].includes(key)) ||
+          (theme.useColorScheme !== undefined && typeof theme.useColorScheme !== 'boolean') ||
+          ['darkClass', 'lightClass'].some(key => theme[key] !== undefined &&
+            (typeof theme[key] !== 'string' || !theme[key] || /[\s\u0000]/u.test(theme[key])))) {
+        throw new TypeError('Invalid declarative theme.');
+      }
+    }
     if (config.attributes !== undefined && (!Array.isArray(config.attributes) || config.attributes.some(value=>!['title','placeholder','aria-label'].includes(value)))) throw new TypeError('Unsupported translation attributes.');
     if (config.exact !== undefined && (!config.exact || typeof config.exact !== 'object' || Array.isArray(config.exact) || Object.values(config.exact).some(value=>typeof value!=='string'))) throw new TypeError('Exact translations must be a string dictionary.');
     if (config.rules !== undefined && !Array.isArray(config.rules)) throw new TypeError('Rules must be an array.');

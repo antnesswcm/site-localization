@@ -5,6 +5,11 @@ export default {
   id: 'replace-site-zh-cn',
   name: 'Replace site',
   matches: ['https://replace.example/ui/*'],
+  // Optional: omit theme to follow the system. root is only html/body; classes
+  // are positive, nonempty single tokens (absence does not imply the opposite).
+  // Only computed color-scheme exactly light/dark is explicit; normal or lists
+  // are unknown. Conflicting signals, missing signals or read errors use system.
+  // theme: { root: 'html', darkClass: 'dark', lightClass: 'light', useColorScheme: true },
   rootSelector: '#verified-ui-root',
   uiSelector: 'button,label,h1,h2,[role="menuitem"]',
   ignoreSelector: 'pre,code,textarea,[contenteditable],.monaco-editor,.cm-editor',

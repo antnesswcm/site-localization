@@ -11,7 +11,7 @@ npm run check
 - [调度测试](<tests/framework-tests.mjs>)：23 项。覆盖 URL 范围、模拟第二站点、SPA 不重装、离开恢复、冲突拒绝以及 history 清理；这里使用计数 stub，**不等同于真实 DOM 测试**。
 - [配置与产物测试](<tests/build.test.mjs>)：22 项。覆盖无效 id、注入型匹配、属性/正则/不可序列化值、旧 off 偏好、品牌版本、namespace、匹配集合及无远程声明。
 - [脚本级位置存储测试](<tests/position-store.test.mjs>)：5 项。补充 GM 共享位置存储及异常路径的离线回归；使用 mock，不证明真实用户脚本管理器行为。
-- 当前离线合计50项；另含构建与最终 JavaScript 语法检查。
+- 本轮 `npm run check` 实测68/68通过（23项路由 + 45项Node测试），另含构建与最终 JavaScript 语法检查；产物34,848字节。上方配置/产物22项及位置存储5项为此前基线，新增主题验证后的Node总数以本轮45项为准。
 - CI 会在 Node 22/24 运行同一入口，并检查提交产物是否可复现；本地通过不表示远程 CI 已运行。
 
 ## 浏览器 DOM 回归
@@ -31,7 +31,7 @@ fixture 无网络请求或第三方测试库。站点配置通过序列化参数
 
 ## 悬浮开关回归
 
-在隔离 about:blank 页加载最终脚本后，加载 [悬浮 fixture](<tests/floating-fixture.js>) 并调用 `window.runFloatingControlTests()`。本轮回归契约为外层36px「汉/原」、独立26px圆形 `span` 底座与14px、字重500文字；内层在贴边和拖动时始终圆形，底色固定 `#ED6D8F`、字色固定 `#3c2030`，不随系统主题变色，使用 Microsoft YaHei / PingFang / sans-serif 字体及 flex 居中。增加普通按下、阈值内微移与点击释放均保持贴边轮廓、仅超过6px实际拖动才圆形展开的回归要求。静止与按下未跨越6px阈值时为 `pointer`，实际拖动为 `crosshair`，释放恢复 `pointer`，不使用 `grab` / `grabbing`。同时保留外层圆形拖动态与外平内圆贴边态、0px边距、触摸 pointer、拖动抑制 click、无 Alt 调位和无 Enter/空格切换、`tabIndex=-1`、脚本级位置共享、无实时窗口同步、语言偏好隔离、body替换、resize、stop中断及异常存储的回归要求。使用隔离测试存储，不清理真实站点存储；此前尺寸与光标方案曾实测40/40（新增6个尺寸、内圆与光标检查），属于历史结果；据主 agent 本轮实测反馈，匿名Ego47/47通过，详见下方记录。
+在隔离 about:blank 页加载最终脚本后，加载 [悬浮 fixture](<tests/floating-fixture.js>) 并调用 `window.runFloatingControlTests()`。本轮回归契约为外层36px「汉/原」、独立26px圆形 `span` 底座与14px、字重500文字；内层在贴边和拖动时始终圆形，底色固定 `#ED6D8F`、字色固定 `#3c2030`，不随系统主题变色，使用 Microsoft YaHei / PingFang / sans-serif 字体及 flex 居中。增加普通按下、阈值内微移与点击释放均保持贴边轮廓、仅超过6px实际拖动才圆形展开的回归要求。静止与按下未跨越6px阈值时为 `pointer`，实际拖动为 `crosshair`，释放恢复 `pointer`，不使用 `grab` / `grabbing`。同时保留外层圆形拖动态与外平内圆贴边态、0px边距、触摸 pointer、拖动抑制 click、无 Alt 调位和无 Enter/空格切换、`tabIndex=-1`、脚本级位置共享、无实时窗口同步、语言偏好隔离、body替换、resize、stop中断及异常存储的回归要求。使用隔离测试存储，不清理真实站点存储；此前尺寸与光标方案曾实测40/40（新增6个尺寸、内圆与光标检查），属于历史结果；固定粉色与点击轮廓修复阶段曾实测匿名Ego47/47，亦属历史；网页主题优先方案本轮悬浮fixture继续47/47通过，主题fixture26/26通过，详见下方记录。
 
 位置契约：`GM_getValue` / `GM_setValue` 共用 `local-ui-translator:toggle-position`，装载读取一次、拖动释放保存，不实时同步其他已打开窗口，无 origin fallback；既有语言偏好兼容键不变。匿名/mock通过不代表 GM 管理器的跨站行为已验收。
 
@@ -49,7 +49,18 @@ UI/UX 改动必须启动本地预览供用户亲自验收；自动测试或 agen
 - 比较切换前后名称、URL 和输入值，验证原文恢复；切回中文。
 - 验证真实 SPA 导航和当前可能折叠的导航菜单。
 
-## 0.3.0 本轮固定粉色、居中字样与点击轮廓修复 · 2026-11-24
+## 0.3.0 本轮网页主题优先 · 2026-11-24
+
+- 用户同意外壳网页明确主题优先、无可靠标记或冲突回退系统；内圆 `#ED6D8F`、字色 `#3c2030`、14px文字固定，不受外壳主题变化影响。
+- 主题识别归完整站点配置：Tailscale 声明 `config.theme = { root: 'html', darkClass: 'dark', useColorScheme: true }`。root 仅 `html` / `body`；读取配置的正向主题 class 和 CSS 单值 `color-scheme: light` / `dark`，`normal`、`light dark` 等为未知，不把 dark class 缺失当成 light 证据，信号冲突回退系统。
+- 回归需覆盖网页与系统相反时网页优先、未知/冲突回退、系统主题 change、配置 root class/style 动态更新，以及主题切换后固定内圆/字色/字号与普通点击轮廓不回退。不猜背景，不轮询，不设生产环境手动主题按钮；本地 preview 页面主题 select 仅用于构造测试状态。
+- 以下由主 agent 本轮实测反馈：`npm run check` **68/68**通过（23项路由 + 45项Node），产物 **34,848字节**；主题fixture **26/26**、悬浮fixture **47/47**通过。主题fixture首次 wait 10秒超时，随后读取原Promise确认成功，并非重新执行或重复计通过。下方50/50、47/47、32,889字节仍是此前阶段历史结果。
+- 本地preview使用原生页面主题select与CDP系统主题模拟，网页light/系统dark的 `siteLightOverDark`、网页dark/系统light的 `siteDarkOverLight` 及未知时系统回退均通过；网页与系统相反的验证仅在本地preview进行。
+- 真实Tailscale临时注入最新产物：浏览器模拟light时页面实际 `html.class` 为空、computed `colorScheme` 为 `light`；模拟dark时实际 `html.dark`、computed `colorScheme` 为 `dark`，外壳随页面同步。名称、链接、输入值保持不变，单开关通过，DNS实际SPA主题维持通过。未验证真实站点手动主题与相反系统组合；临时注入不是真实GM实装或自动加载验收。
+- 本次文档维护仅记录主 agent 的实测反馈，未执行源码修改、产物修改、构建、浏览器测试或提交。
+- 用户视觉中心/UI/UX验收及真实GM实装仍未完成，保留 `nomerge`；本地预览需用户亲自验收，自动测试不替代用户确认。
+
+## 0.3.0 固定粉色、居中字样与点击轮廓修复（历史） · 2026-11-24
 
 - 用户要求底色 `#ED6D8F`、字样缩小且视觉居中，并反馈点击时直角贴边轮廓收起/展开异常。外层36px、内层26px保持不变；内圆改为固定 `#ED6D8F`、深色文字 `#3c2030`，14px、字重500，Microsoft YaHei / PingFang / sans-serif 字体与 flex 居中，不随系统主题变色。
 - 根因是 `pointerdown` 立即把外层圆形展开；现只在 `moveDrag` 超过6px实际拖动阈值后改为圆形，普通按下、阈值内微移及点击释放保持贴边轮廓。`pointer` / `crosshair`、共享位置及其他交互契约不变。

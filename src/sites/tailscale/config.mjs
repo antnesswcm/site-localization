@@ -31,6 +31,7 @@ const exact = {
 export default {
   id: 'tailscale-zh-cn',
   name: 'Tailscale',
+  theme: { root: 'html', darkClass: 'dark', useColorScheme: true },
   matches: ['https://console.tailscale.com/admin/*','https://login.tailscale.com/admin/*'],
   uiSelector: 'a,button,h1,h2,h3,h4,p,label,th,dt,[role="menuitem"],[role="tab"],[role="dialog"],[role="heading"],input',
   ignoreSelector: 'script,style,pre,code,textarea,[contenteditable]:not([contenteditable="false"]),.monaco-editor,.cm-editor,.CodeMirror,[data-local-ui-translator]',

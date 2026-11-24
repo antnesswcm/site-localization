@@ -238,9 +238,45 @@
     function savePosition() {
       try { global.__localUiPositionStore?.write({ ...position }); } catch (_) { /* Storage is optional. */ }
     }
+    // Only positive, declared markers and a single computed scheme are explicit.
+    // Missing, ambiguous, conflicting or unreadable site signals use the system.
+    function siteTheme() {
+      const theme = adapter.theme;
+      if (!theme) return null;
+      try {
+        const root = theme.root === 'html' ? doc.documentElement : theme.root === 'body' ? doc.body : null;
+        if (!root) return null;
+        const signals = [];
+        if (theme.darkClass && root.classList.contains(theme.darkClass)) signals.push('dark');
+        if (theme.lightClass && root.classList.contains(theme.lightClass)) signals.push('light');
+        if (theme.useColorScheme) {
+          const scheme = global.getComputedStyle(root).colorScheme.trim();
+          if (scheme === 'dark' || scheme === 'light') signals.push(scheme);
+        }
+        return signals.length && signals.every(value => value === signals[0]) ? signals[0] : null;
+      } catch (_) { return null; }
+    }
+    let themeRoot;
+    const themeObserver = adapter.theme ? new global.MutationObserver(() => {
+      observeTheme();
+      updateColors();
+    }) : null;
+    function observeTheme() {
+      if (!themeObserver || stopped) return;
+      const root = adapter.theme.root === 'html' ? doc.documentElement : doc.body;
+      if (root === themeRoot) return;
+      themeObserver.disconnect();
+      themeRoot = root;
+      if (root) themeObserver.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+      // A body root can be replaced; watch only html's direct children, not subtrees.
+      if (adapter.theme.root === 'body' && doc.documentElement) {
+        themeObserver.observe(doc.documentElement, { childList: true });
+      }
+    }
     function updateColors() {
-      if (!button) return;
-      const dark = !!colorScheme?.matches;
+      if (!button || stopped) return;
+      const explicit = siteTheme();
+      const dark = explicit === null ? !!colorScheme?.matches : explicit === 'dark';
       button.style.backgroundColor = dark ? '#252a32' : '#f8fafc';
       button.style.color = dark ? '#f1f5f9' : '#202938';
       button.style.borderColor = dark ? '#8993a3' : '#697586';
@@ -367,6 +403,8 @@
         if (stopped) return;
         stopped = true;
         observer.disconnect();
+        themeObserver?.disconnect();
+        themeRoot = null;
         if (frame !== null) global.cancelAnimationFrame(frame);
         frame = null;
         queue.clear();
@@ -384,6 +422,7 @@
     };
     global.__localUiTranslator = api;
     observe();
+    observeTheme();
     global.addEventListener('popstate', refresh);
     global.addEventListener('hashchange', refresh);
     global.addEventListener('resize', resizeButton);

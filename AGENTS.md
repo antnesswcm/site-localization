@@ -75,7 +75,7 @@ npm run check
 - 文档-only 修改通常做链接、内容和 git diff 检查即可；不要为流程仪式重复无关浏览器测试。
 - 记录实际执行的检查与限制，不把本地通过说成远程 CI 通过，不把旧记录当本轮结果。需要细节时读取 [TESTING](<TESTING.md>)。
 
-0.3.0前一轮尺寸与光标调整（历史）：主 agent 曾反馈离线50/50、Ego悬浮fixture40/40及原生鼠标光标/拖动点击检查通过，构建32,880字节。本轮改为固定 `#ED6D8F` 底色、14px居中文字并修复点击贴边轮廓变化，据主 agent 本轮实测反馈，离线50/50、匿名Ego47/47通过，构建32,889字节；原生鼠标按下/微移/释放保持轮廓与位置、实际拖动才圆形展开及光标切换均通过，固定粉色与14px确认；390×844截图承载几何居中通过，文字视觉中心仍待用户验收；详细记录见 [TESTING](<TESTING.md>)。尚无真实GM实装或用户UI/UX验收，仍保持 `nomerge`。
+0.3.0历史本地结果：尺寸/光标阶段离线50/50、Ego40/40、构建32,880字节；随后固定 `#ED6D8F`、14px及点击轮廓修复阶段离线50/50、匿名Ego47/47、构建32,889字节，原生鼠标轮廓/位置与光标检查通过，390×844截图承载几何居中通过。这些均不是新增网页主题优先方案的本轮总数。据主 agent 本轮实测，`npm run check` 68/68（23路由+45Node）、主题fixture26/26、悬浮fixture47/47通过，产物34,848字节。主题fixture首次wait 10秒超时，随后读取原Promise确认成功，非重复计通过。本地preview原生select+CDP验证 `siteLightOverDark`、`siteDarkOverLight` 与未知系统回退通过。真实Tailscale临时注入最新产物，浏览器模拟light时实际html class为空/computed light，模拟dark时html.dark/computed dark，外壳同步；名称、链接、输入值保持、单开关及DNS实际SPA主题维持通过。未验证真实站点手动主题与相反系统组合，相反系统组合仅在本地preview验证；临时注入不是真实GM实装。文字视觉中心、用户UI/UX及真实GM实装仍未验收，保持 `nomerge`；详细记录见 [TESTING](<TESTING.md>)。
 
 历史基线：2026-11-24 的0.2.1曾通过23项调度、22项配置/产物和20项Ego DOM检查，且干净克隆可重建。此句是历史，不是当前工作树的验证承诺。
 
@@ -86,6 +86,7 @@ npm run check
 - 项目规范、UI/UX 必须由用户验收的原则、文件夹结构与资产归属写入项目文档，不塞进 Issue；Issue 聚焦当前任务的需求/缺陷与验收，链接相关文档即可。
 - worktree 统一放主仓库根 `.worktrees/`。从主仓库根创建，避免在已有 worktree 内递归建立 `.worktrees/`；迁移必须用 `git worktree move` 管理，不能直接移动目录破坏 Git 元数据。
 - 悬浮语言开关属于框架 UI，位置/交互规则不能下放到站点配置。当前外层36px「汉/原」贴边控件，0px边距；只有超过6px实际拖动阈值才展开为圆形，普通按下、阈值内微移与点击释放保持外平内圆贴边轮廓，禁止在 `pointerdown` 立即圆形展开。独立26px圆形 `span` 底座始终为固定 `#ED6D8F`，文字固定深色 `#3c2030`、14px、字重500，Microsoft YaHei / PingFang / sans-serif 字体与 flex 居中，不跟随系统主题变色；视觉中心由用户验收。静止及按下未跨越6px拖动阈值时为 `pointer`，实际拖动时为 `crosshair`，释放恢复 `pointer`，禁止 `grab` / `grabbing`。仅指针（鼠标/触屏）操作，`tabIndex=-1`，不提供 Tab 聚焦、Alt 调位或 Enter/空格控制。
+- 外壳主题识别归完整站点配置，Tailscale 声明 `config.theme = { root: 'html', darkClass: 'dark', useColorScheme: true }`；框架执行网页明确主题优先、未知或冲突回退系统的规则。root 仅允许 `html` / `body`，仅使用配置的正向主题 class 和 CSS 单值 `color-scheme: light` / `dark`；`normal`、`light dark` 等未知，信号冲突回退系统。不得把 Tailscale 的 class 硬编码进框架、猜测背景色、轮询或增加生产手动主题按钮。系统主题 change 与配置 root 的 class/style 变化动态更新；本地 preview 页面主题 select 仅供测试。主题变化只影响外壳，内圆 `#ED6D8F`、字色 `#3c2030` 与14px不变；点击贴边轮廓修复不得回退。
 - 位置使用 `GM_getValue` / `GM_setValue` 和同一个脚本级键 `local-ui-translator:toggle-position`，装载读取一次、拖动释放保存，不实时同步其他窗口，没有 origin fallback；不要更改既有按站点 id 保存的语言偏好及兼容键。
 - 当前 `@sandbox raw` 与 GM 授权组合尚未经真实油猴安装验证。离线、匿名 fixture、两域本地 mock 共享检查均不能表述为真实 GM 跨站验收或实装完成。
 - 根项目内 `.del/` 放废弃资产，只移动、不删除；`.local/` 放仍有用的本地测试、截图、预览、日志、真实浏览器记录和私有结果，不提交。仍有用的一次性脚本或干净克隆也归入 `.local/`，废弃后归入 `.del/`。不再要求或新增项目外归档规则。

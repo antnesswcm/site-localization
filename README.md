@@ -18,16 +18,17 @@ A local, dependency-free userscript framework for site-specific Chinese UI local
 
 ## 悬浮贴边开关
 
-这是通用框架 UI，不使用目标站点的布局/选择器配置：
+这是通用框架 UI：位置与交互不使用目标站点的布局/选择器配置；外壳主题识别由完整站点配置声明：
 
 - 外层36px「汉/原」贴边控件，默认贴右边中部，与视口边缘间距为0px；只有超过6px阈值开始实际拖动才展开为圆形，普通按下、阈值内微移和点击释放均保持外侧平直、内侧圆弧的贴边轮廓。内层使用独立26px圆形 `span` 底座，始终为固定粉色 `#ED6D8F`，文字固定深色 `#3c2030`，不跟随系统主题变色；标识为14px、字重500，使用 Microsoft YaHei / PingFang / sans-serif 字体及 flex 居中，视觉中心待用户确认。
+- 外壳优先跟随网页的明确主题，无可靠标记或标记冲突时回退系统主题；完整站点配置声明 `theme: { root: 'html', darkClass: 'dark', useColorScheme: true }`。仅从配置指定的 `html` / `body` 读取正向主题 class 和 CSS 单值 `color-scheme: light` / `dark`；`normal`、`light dark` 等不作明确主题证据。系统主题 change 与配置 root 的 class/style 变化会动态更新；不猜背景、不轮询，不增加生产环境手动主题按钮。本地预览的页面主题 select 仅供测试，内圆颜色与14px文字始终固定。
 - 鼠标或触屏拖动后，松手吸附最近的左/右边缘；普通点击切换语言，超过6px的拖动不会误触切换。静止及按下但未跨越6px拖动阈值时使用 `pointer`，实际拖动时使用 `crosshair`，释放后恢复 `pointer`；不使用 `grab` / `grabbing`。
 - 仅支持指针（鼠标/触屏）操作；开关 `tabIndex=-1`，不进入 Tab 顺序，不提供 Alt 调位或 Enter/空格切换。
 - 位置按“左右边 + 归一化高度”通过 `GM_getValue` / `GM_setValue` 保存到同一个脚本级键 `local-ui-translator:toggle-position`，供支持站点共享。装载时读取一次，拖动释放时保存，不实时同步其他已打开窗口；没有按 origin 的存储回退。语言偏好仍使用原站点 id 与兼容键，不随位置存储改动。
 - 窗口缩放保持控件可见，主体替换重挂载，停止时取消拖动并清理监听。存储禁用/损坏不影响使用。
 - 使用 layout viewport；目标页面强制 CSS、祖先 transform、移动端软键盘/visual viewport 的特殊影响尚不保证。
 
-当前产物声明 `@sandbox raw` 及 `GM_getValue` / `GM_setValue` 授权，但尚未在真实油猴安装中验证此组合。此前44px方案及36px尺寸/光标方案的检查均为历史本地证据：后者曾有离线50/50、Ego匿名40/40和原生鼠标检查通过，构建32,880字节；不代表本轮固定粉色、14px居中字样及点击轮廓修复的结果。据主 agent 本轮实测反馈，离线50/50、匿名Ego47/47通过，构建32,889字节；原生鼠标按下/阈值内微移/释放保持轮廓与位置、实际拖动才圆形展开及光标切换均通过，固定粉色与14px确认。390×844截图经主 agent 读取检查，承载几何居中通过；文字视觉中心及用户 UI/UX 验收仍待确认，保持 `nomerge`。详情见 [测试记录](<TESTING.md>)。
+当前产物声明 `@sandbox raw` 及 `GM_getValue` / `GM_setValue` 授权，但尚未在真实油猴安装中验证此组合。此前44px方案及36px尺寸/光标方案的检查均为历史本地证据：后者曾有离线50/50、Ego匿名40/40和原生鼠标检查通过，构建32,880字节；不代表后续固定粉色、14px居中字样及点击轮廓修复的结果。固定粉色、14px及点击轮廓修复阶段曾有离线50/50、匿名Ego47/47、构建32,889字节和原生鼠标检查通过，390×844截图承载几何居中通过；这些是新增网页主题优先方案之前的历史结果，不作为本轮总数。据主 agent 本轮实测，`npm run check` 68/68（23路由+45Node）、主题fixture26/26、悬浮fixture47/47通过，产物34,848字节；主题fixture先wait 10秒超时，随后读取原Promise确认成功，未重复计通过。本地preview原生select+CDP验证网页light/系统dark、网页dark/系统light及未知系统回退通过。真实Tailscale临时注入最新产物后，浏览器模拟light时实际html class为空/computed light，模拟dark时html.dark/computed dark，外壳同步；名称、链接、输入值保持、单开关及DNS实际SPA主题维持通过。真实站点未测手动主题与相反系统组合，相反主题仅在本地preview验证；临时注入不是真实GM实装。文字视觉中心、用户 UI/UX 验收及真实GM实装仍待确认，保持 `nomerge`。详情见 [测试记录](<TESTING.md>)。
 
 ## 两类开发对象
 
@@ -50,6 +51,7 @@ A local, dependency-free userscript framework for site-specific Chinese UI local
 | `rules` | 锚定正则和动态文案，可加 `selector` |
 | `uiSelector` / `rootSelector` | UI 与可选根范围 |
 | `attributes` | 仅 title、placeholder、aria-label |
+| `theme` | 外壳网页主题识别声明；root 仅 html/body，明确标记优先、未知或冲突回退系统 |
 | `ignoreSelector` / `protectSelector` | 代码、编辑器与用户内容保护 |
 
 词库、元素规则、整句和正则都是配置的内部手段，不是不同安装单位。配置未来可以拆成多文件再导出完整对象；发布仍默认合成一个用户脚本。

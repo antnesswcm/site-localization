@@ -25,6 +25,7 @@
 !/tests/build.test.mjs
 !/tests/dom-fixture.js
 !/tests/floating-fixture.js
+!/tests/theme-fixture.js
 !/tests/position-store.test.mjs
 !/dist/
 /dist/*

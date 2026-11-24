@@ -17,6 +17,22 @@ for (const [name,change] of [
   ['invalid regex',c=>c.rules=[{pattern:'^[$',replacement:'x'}]],
   ['non-string selector',c=>c.uiSelector=123],['executable resource',c=>c.extra=()=>{}]
 ]) test('reject '+name,()=>{const c=good();change(c);assert.throws(()=>validateConfigurations([c]));});
+for (const [name, theme] of [
+  ['null', null], ['array', []], ['string', 'dark'], ['missing root', {}],
+  ['selector root', {root: '#app'}], ['uppercase root', {root: 'HTML'}],
+  ['nonboolean scheme', {root: 'html', useColorScheme: 'true'}],
+  ['numeric scheme', {root: 'html', useColorScheme: 1}],
+  ['empty dark class', {root: 'html', darkClass: ''}],
+  ['multitoken dark class', {root: 'html', darkClass: 'dark mode'}],
+  ['whitespace light class', {root: 'body', lightClass: '\tlight'}],
+  ['nonstring class', {root: 'body', lightClass: 1}],
+  ['null class', {root: 'html', darkClass: null}],
+  ['unknown field', {root: 'html', selector: 'html'}]
+]) test('reject malformed theme: '+name,()=>{const c=good();c.theme=theme;assert.throws(()=>validateConfigurations([c]),/Invalid declarative theme/);});
+for (const theme of [{root:'html'}, {root:'body',lightClass:'light',darkClass:'dark',useColorScheme:false}, {root:'html',useColorScheme:true}]) {
+  test('accept declarative theme '+JSON.stringify(theme),()=>{const c=good();c.theme=theme;validateConfigurations([c]);});
+}
+test('optional theme may be omitted',()=>{const c=good();delete c.theme;validateConfigurations([c]);});
 test('duplicate id rejected',()=>assert.throws(()=>validateConfigurations([good(),good()])));
 test('explicitly scoped dynamic rule is supported',()=>{const c=good();c.rules=[{pattern:'^(\\d+) items?$',replacement:'$1 项',selector:'[data-item-count]'}];validateConfigurations([c]);});
 test('existing off preference remains off with unchanged storage identity',async()=>{
