@@ -24,6 +24,7 @@
 !/tests/framework-tests.mjs
 !/tests/build.test.mjs
 !/tests/dom-fixture.js
+!/tests/floating-fixture.js
 !/dist/
 /dist/*
 !/dist/local-ui-zh.user.js

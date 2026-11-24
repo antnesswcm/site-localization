@@ -4,17 +4,28 @@
 
 A local, dependency-free userscript framework for site-specific Chinese UI localization. Develop the framework and complete site configurations separately; install one bundled userscript.
 
-版本 **0.2.1** · MIT · 首个正式适配：**Tailscale 管理台**。
+版本 **0.3.0** · MIT · 首个正式适配：**Tailscale 管理台**。
 
 ## 安装与更新
 
 1. 在 Tampermonkey 等用户脚本管理器中新建脚本，粘贴 [统一产物](<dist/local-ui-zh.user.js>) 的完整内容并保存。
-2. 打开或刷新 `https://console.tailscale.com/admin/machines`，右下角可中英切换。
+2. 打开或刷新 `https://console.tailscale.com/admin/machines`，使用悬浮贴边开关切换中英。
 3. 不要同时启用其他 Tailscale 汉化脚本。
 
 **从「网页汉化 · 本地框架」升级：打开原条目的编辑器，替换内容并保存，不再新建另一份。** 改名可能影响管理器按名称识别的导入行为；本项目保留 `@namespace local-ui-translator`、`tailscale-zh-cn` 配置 id 和既有语言偏好键。若导入生成两份条目，请停用旧条目。
 
 目前不配置自动更新地址；后续手动更新同一个脚本。正式发布远程入口后再设置固定的 `@updateURL` / `@downloadURL`。
+
+## 悬浮贴边开关
+
+这是通用框架 UI，不使用目标站点的布局/选择器配置：
+
+- 默认贴右边中部；鼠标或触屏拖动后，松手吸附最近的左/右边缘。
+- 普通点击切换语言；超过6px的拖动不会误触切换。
+- 按 Tab 聚焦后，`Alt+←/→` 换边，`Alt+↑/↓` 每次调整纵向范围的5%；Enter/空格正常切换。
+- 位置按“左右边 + 归一化高度”保存在 `local-ui-translator:toggle-position`。同 origin 的不同站点配置共享位置，跨域不共享；语言偏好仍按原站点 id 保存。
+- 窗口缩放保持控件可见，主体替换重挂载，停止时取消拖动并清理监听。存储禁用/损坏不影响使用。
+- 使用 layout viewport；目标页面强制 CSS、祖先 transform、移动端软键盘/visual viewport 的特殊影响尚不保证。
 
 ## 两类开发对象
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         站点汉化 / Site Localization
 // @namespace    local-ui-translator
-// @version      0.2.1
+// @version      0.3.0
 // @description  一个脚本承载完整站点汉化配置；自动选站、增量DOM翻译、中英文切换
 // @license      MIT
 // @match        https://console.tailscale.com/admin/*
@@ -62,6 +62,17 @@
     let stopped = false;
     let frame = null;
     let button = null;
+    const positionKey = 'local-ui-translator:toggle-position';
+    let position = { side: 'right', y: 0.5 };
+    let drag = null;
+    let suppressClick = false;
+    try {
+      const saved = JSON.parse(global.localStorage.getItem(positionKey));
+      if (saved && (saved.side === 'left' || saved.side === 'right') &&
+          typeof saved.y === 'number' && Number.isFinite(saved.y) && saved.y >= 0 && saved.y <= 1) {
+        position = { side: saved.side, y: saved.y };
+      }
+    } catch (_) { /* Corrupt or unavailable storage uses the default position. */ }
     try { enabled = global.localStorage.getItem(storageKey) !== 'off'; } catch (_) { /* Storage is optional. */ }
 
     function elementFor(node) { return node.nodeType === 1 ? node : node.parentElement; }
@@ -220,13 +231,62 @@
     function observe() {
       observer.observe(doc, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: Array.from(new Set([...attributes, ...contextAttributes])) });
     }
+    function bounds() {
+      const width = global.innerWidth;
+      const height = global.innerHeight;
+      const x = Math.max(0, width - button.offsetWidth);
+      const y = Math.max(0, height - button.offsetHeight);
+      return { x, y, insetX: Math.min(8, x / 2), insetY: Math.min(8, y / 2) };
+    }
+    function placeButton() {
+      if (!button || !button.isConnected || drag) return;
+      const b = bounds();
+      button.style.left = (position.side === 'left' ? b.insetX : b.x - b.insetX) + 'px';
+      button.style.top = (b.insetY + position.y * (b.y - 2 * b.insetY)) + 'px';
+    }
+    function savePosition() {
+      try { global.localStorage.setItem(positionKey, JSON.stringify(position)); } catch (_) { /* Storage is optional. */ }
+    }
+    function endDrag(event, save = true) {
+      if (!drag || (event && event.pointerId !== drag.id)) return;
+      const previous = drag;
+      drag = null;
+      global.removeEventListener('pointermove', moveDrag);
+      global.removeEventListener('pointerup', endDrag);
+      global.removeEventListener('pointercancel', endDrag);
+      try { button.releasePointerCapture(previous.id); } catch (_) { /* Capture may already be lost. */ }
+      if (previous.moved && save) {
+        const b = bounds();
+        const rect = button.getBoundingClientRect();
+        position.side = rect.left + rect.width / 2 < global.innerWidth / 2 ? 'left' : 'right';
+        position.y = b.y > 2 * b.insetY ? Math.max(0, Math.min(1, (rect.top - b.insetY) / (b.y - 2 * b.insetY))) : 0.5;
+        suppressClick = true;
+        if (save) savePosition();
+      }
+      placeButton();
+    }
+    function moveDrag(event) {
+      if (!drag || event.pointerId !== drag.id) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+      drag.moved = true;
+      event.preventDefault();
+      const b = bounds();
+      button.style.left = Math.max(0, Math.min(b.x, drag.left + dx)) + 'px';
+      button.style.top = Math.max(0, Math.min(b.y, drag.top + dy)) + 'px';
+    }
+    function resizeButton() { endDrag(null); placeButton(); }
     function updateButton() {
       if (!button) return;
       const label = enabled ? '中文 · 切换 English' : 'English · 切换中文';
       if (button.firstChild) button.firstChild.nodeValue = label;
       else button.appendChild(doc.createTextNode(label));
       button.setAttribute('aria-pressed', String(enabled));
-      button.title = '本地界面翻译 / Local UI translation';
+      const help = '拖动贴边；Alt+方向键调整位置 / Drag to dock; Alt+arrow keys to reposition';
+      button.setAttribute('aria-label', label + '；' + help);
+      button.title = '本地界面翻译 / Local UI translation；' + help;
+      placeButton();
     }
     function ensureButton() {
       if (stopped || !doc.body) return;
@@ -234,11 +294,40 @@
         button = doc.createElement('button');
         button.type = 'button';
         button.setAttribute('data-local-ui-translator', adapter.id);
-        button.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483647;padding:8px 12px;border:1px solid #777;border-radius:8px;background:#fff;color:#222;font:13px system-ui;cursor:pointer;box-shadow:0 2px 8px #0003;';
-        button.addEventListener('click', () => api.toggle());
+        button.style.cssText = 'position:fixed;left:0;top:0;max-width:100vw;max-height:100vh;box-sizing:border-box;z-index:2147483647;padding:8px 12px;border:1px solid #777;border-radius:8px;background:#fff;color:#222;font:13px system-ui;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 8px #0003;';
+        button.addEventListener('click', event => {
+          if (suppressClick && event.detail !== 0) { suppressClick = false; event.preventDefault(); return; }
+          suppressClick = false;
+          api.toggle();
+        });
+        button.addEventListener('pointerdown', event => {
+          if (drag || event.button !== 0 || event.isPrimary === false) return;
+          suppressClick = false;
+          const rect = button.getBoundingClientRect();
+          drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
+          try { button.setPointerCapture(event.pointerId); } catch (_) { /* Window listeners still track the gesture. */ }
+          global.addEventListener('pointermove', moveDrag, { passive: false });
+          global.addEventListener('pointerup', endDrag);
+          global.addEventListener('pointercancel', endDrag);
+        });
+        button.addEventListener('lostpointercapture', endDrag);
+        button.addEventListener('keydown', event => {
+          if (!event.altKey || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+          event.preventDefault();
+          endDrag(null);
+          if (event.key === 'ArrowLeft') position.side = 'left';
+          else if (event.key === 'ArrowRight') position.side = 'right';
+          else position.y = Math.max(0, Math.min(1, position.y + (event.key === 'ArrowUp' ? -0.05 : 0.05)));
+          placeButton();
+          savePosition();
+        });
         updateButton();
       }
-      if (!button.isConnected) doc.body.appendChild(button);
+      if (!button.isConnected) {
+        endDrag(null, false);
+        doc.body.appendChild(button);
+        placeButton();
+      }
     }
     function refresh() { ensureButton(); enqueue(doc.documentElement); }
     function restore() {
@@ -271,6 +360,8 @@
         restore();
         global.removeEventListener('popstate', refresh);
         global.removeEventListener('hashchange', refresh);
+        global.removeEventListener('resize', resizeButton);
+        endDrag(null, false);
         doc.removeEventListener('DOMContentLoaded', refresh);
         if (button) button.remove();
         button = null;
@@ -281,6 +372,7 @@
     observe();
     global.addEventListener('popstate', refresh);
     global.addEventListener('hashchange', refresh);
+    global.addEventListener('resize', resizeButton);
     doc.addEventListener('DOMContentLoaded', refresh);
     refresh();
     return api;
