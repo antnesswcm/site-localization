@@ -6,10 +6,11 @@
   'use strict';
 
   const DEFAULT_UI = 'button,a,label,legend,summary,option,h1,h2,h3,h4,h5,h6,[role="button"],[role="tab"],[role="menuitem"],[role="heading"]';
-  const EXCLUDED = 'script,style,pre,code,textarea,[contenteditable]:not([contenteditable="false"]),.notranslate,[translate="no"],[data-local-ui-translator]';
+  const EXCLUDED = 'script,style,pre,code,textarea,[contenteditable]:not([contenteditable="false"]),.notranslate,[translate="no"],[data-site-localization-ui]';
   const ALLOWED_ATTRIBUTES = new Set(['title', 'placeholder', 'aria-label']);
 
-  function installTranslator(adapter) {
+  function installTranslator(adapter, options = {}) {
+    if (options.enabled !== undefined && typeof options.enabled !== "boolean") throw new TypeError("enabled must be boolean");
     if (!adapter || typeof adapter.id !== 'string' || !adapter.id.trim()) {
       throw new TypeError('A trusted adapter with a nonempty id is required.');
     }
@@ -35,20 +36,19 @@
     });
     const selectors = [excluded, uiSelector, rootSelector, ...rules.map(rule => rule.selector)].filter(Boolean);
     selectors.forEach(selector => doc.querySelector(selector));
-    if (global.__localUiTranslator && typeof global.__localUiTranslator.stop === 'function') {
-      global.__localUiTranslator.stop();
-    }
+
 
     const records = new WeakMap();
     const modified = new Set();
     const queue = new Set();
     const counts = { scans: 0, visited: 0, translated: 0, restored: 0, externalChanges: 0, flushes: 0 };
-    const storageKey = 'local-ui-translator:' + adapter.id;
-    let enabled = true;
+    const subscribers = new Set();
+    let enabled = options.enabled ?? true;
     let stopped = false;
     let frame = null;
-    let button = null;
-    try { enabled = global.localStorage.getItem(storageKey) !== 'off'; } catch (_) { /* Storage is optional. */ }
+    function notify() {
+      for (const listener of subscribers) { try { listener({enabled, stopped}); } catch (_) {} }
+    }
 
     function elementFor(node) { return node.nodeType === 1 ? node : node.parentElement; }
     function allowed(element) {
@@ -159,7 +159,6 @@
       frame = null;
       if (stopped) return;
       counts.flushes++;
-      ensureButton();
       const roots = Array.from(queue);
       queue.clear();
       const minimal = roots.filter(root => !roots.some(other => other !== root && other.contains && other.contains(root)));
@@ -187,7 +186,7 @@
     });
     const observer = new global.MutationObserver(mutations => {
       for (const mutation of mutations) {
-        if (button && (mutation.target === button || button.contains(mutation.target))) continue;
+        if (elementFor(mutation.target)?.closest("[data-site-localization-ui]")) continue;
         if (mutation.type === 'characterData') {
           if (!isOurWrite(mutation.target, '#text')) enqueue(mutation.target);
         } else if (mutation.type === 'attributes') {
@@ -196,37 +195,17 @@
           if (contextAttributes.has(mutation.attributeName) || !isOurWrite(mutation.target, mutation.attributeName)) enqueue(mutation.target);
         } else {
           for (const node of mutation.addedNodes) {
-            if (node !== button) enqueue(node);
+            enqueue(node);
           }
           // Only cleanup/reattach on removals, never rescan a whole React list.
-          if (mutation.removedNodes.length && (modified.size || (button && !button.isConnected))) scheduleFlush();
+          if (mutation.removedNodes.length && modified.size) scheduleFlush();
         }
       }
     });
     function observe() {
       observer.observe(doc, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: Array.from(new Set([...attributes, ...contextAttributes])) });
     }
-    function updateButton() {
-      if (!button) return;
-      const label = enabled ? '中文 · 切换 English' : 'English · 切换中文';
-      if (button.firstChild) button.firstChild.nodeValue = label;
-      else button.appendChild(doc.createTextNode(label));
-      button.setAttribute('aria-pressed', String(enabled));
-      button.title = '本地界面翻译 / Local UI translation';
-    }
-    function ensureButton() {
-      if (stopped || !doc.body) return;
-      if (!button) {
-        button = doc.createElement('button');
-        button.type = 'button';
-        button.setAttribute('data-local-ui-translator', adapter.id);
-        button.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483647;padding:8px 12px;border:1px solid #777;border-radius:8px;background:#fff;color:#222;font:13px system-ui;cursor:pointer;box-shadow:0 2px 8px #0003;';
-        button.addEventListener('click', () => api.toggle());
-        updateButton();
-      }
-      if (!button.isConnected) doc.body.appendChild(button);
-    }
-    function refresh() { ensureButton(); enqueue(doc.documentElement); }
+    function refresh() { enqueue(doc.documentElement); }
     function restore() {
       observer.disconnect();
       for (const node of modified) restoreNode(node);
@@ -242,10 +221,14 @@
       toggle(force) {
         if (stopped) return false;
         enabled = typeof force === 'boolean' ? force : !enabled;
-        try { global.localStorage.setItem(storageKey, enabled ? 'on' : 'off'); } catch (_) { /* fail safe */ }
-        updateButton();
+        notify();
         if (enabled) refresh(); else restore();
         return enabled;
+      },
+      subscribe(listener) {
+        if (typeof listener !== "function") throw new TypeError("listener must be a function");
+        if (stopped) return () => {};
+        subscribers.add(listener); return () => subscribers.delete(listener);
       },
       stop() {
         if (stopped) return;
@@ -255,18 +238,11 @@
         frame = null;
         queue.clear();
         restore();
-        global.removeEventListener('popstate', refresh);
-        global.removeEventListener('hashchange', refresh);
         doc.removeEventListener('DOMContentLoaded', refresh);
-        if (button) button.remove();
-        button = null;
-        if (global.__localUiTranslator === api) delete global.__localUiTranslator;
+        notify(); subscribers.clear();
       }
     };
-    global.__localUiTranslator = api;
     observe();
-    global.addEventListener('popstate', refresh);
-    global.addEventListener('hashchange', refresh);
     doc.addEventListener('DOMContentLoaded', refresh);
     refresh();
     return api;

@@ -15,6 +15,12 @@ export function validateConfigurations(configurations) {
     }
     if (config.attributes !== undefined && (!Array.isArray(config.attributes) || config.attributes.some(value=>!['title','placeholder','aria-label'].includes(value)))) throw new TypeError('Unsupported translation attributes.');
     if (config.exact !== undefined && (!config.exact || typeof config.exact !== 'object' || Array.isArray(config.exact) || Object.values(config.exact).some(value=>typeof value!=='string'))) throw new TypeError('Exact translations must be a string dictionary.');
+    if (config.theme !== undefined) {
+      const t=config.theme;
+      if (!t || typeof t!=='object' || Array.isArray(t) || !['html','body'].includes(t.root) || Object.keys(t).some(key=>!['root','darkClass','lightClass','useColorScheme'].includes(key))) throw new TypeError('Invalid theme declaration.');
+      for (const key of ['darkClass','lightClass']) if(t[key]!==undefined && (typeof t[key]!=='string' || !/^[a-zA-Z_][\w-]*$/.test(t[key]))) throw new TypeError('Invalid theme class.');
+      if(t.useColorScheme!==undefined && typeof t.useColorScheme!=='boolean') throw new TypeError('Invalid color scheme option.');
+    }
     if (config.rules !== undefined && !Array.isArray(config.rules)) throw new TypeError('Rules must be an array.');
     for (const rule of config.rules || []) {
       if (!rule || typeof rule.pattern !== 'string' || !rule.pattern.startsWith('^') || !rule.pattern.endsWith('$') || typeof rule.replacement !== 'string' || (rule.flags !== undefined && typeof rule.flags !== 'string') || /[my]/.test(rule.flags || '')) throw new TypeError('Invalid anchored translation rule.');

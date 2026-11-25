@@ -33,9 +33,10 @@ export default {
   name: 'Tailscale',
   matches: ['https://console.tailscale.com/admin/*','https://login.tailscale.com/admin/*'],
   uiSelector: 'a,button,h1,h2,h3,h4,p,label,th,dt,[role="menuitem"],[role="tab"],[role="dialog"],[role="heading"],input',
-  ignoreSelector: 'script,style,pre,code,textarea,[contenteditable]:not([contenteditable="false"]),.monaco-editor,.cm-editor,.CodeMirror,[data-local-ui-translator]',
+  ignoreSelector: 'script,style,pre,code,textarea,[contenteditable]:not([contenteditable="false"]),.monaco-editor,.cm-editor,.CodeMirror,[data-site-localization-ui]',
   protectSelector: 'a[href^="/admin/machines/100."],a[aria-label^="Detail view for"],button[aria-label="User menu"],[data-testid*="device-name"],[data-testid*="machine-name"],[data-testid*="user-email"]',
   attributes: ['title','placeholder','aria-label'],
+  theme: {root:'html',darkClass:'dark',useColorScheme:true},
   exact,
   rules: [
     {pattern:'^(\\d+) machines?$',replacement:'$1 台设备'},
