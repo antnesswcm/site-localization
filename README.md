@@ -4,15 +4,15 @@
 
 A local, dependency-free userscript framework for site-specific Chinese UI localization. Develop the framework and complete site configurations separately; install one bundled userscript.
 
-版本 **0.2.1** · MIT · 首个正式适配：**Tailscale 管理台**。
+版本 **0.4.0** · MIT（含 Lucide ISC / Feather MIT 图标许可）· 首个正式适配：**Tailscale 管理台**。悬浮入口使用固定离线 [DockOrb 0.3.0](<vendor/dockorb/manifest.json>)，不是第二个安装脚本。
 
 ## 安装与更新
 
 1. 在 Tampermonkey 等用户脚本管理器中新建脚本，粘贴 [统一产物](<dist/local-ui-zh.user.js>) 的完整内容并保存。
-2. 打开或刷新 `https://console.tailscale.com/admin/machines`，右下角可中英切换。
+2. 打开或刷新 `https://console.tailscale.com/admin/machines`，通过贴边悬浮球切换。**汉**表示下一步汉化，**原**表示下一步恢复原文；拖动释放后吸附左/右边缘。短触屏点击切换，长按展开；普通鼠标点击不因焦点而展开。小关闭只隐藏入口，不改变语言；管理器菜单「显示汉化入口」可恢复。
 3. 不要同时启用其他 Tailscale 汉化脚本。
 
-**从「网页汉化 · 本地框架」升级：打开原条目的编辑器，替换内容并保存，不再新建另一份。** 改名可能影响管理器按名称识别的导入行为；本项目保留 `@namespace local-ui-translator`、`tailscale-zh-cn` 配置 id 和既有语言偏好键。若导入生成两份条目，请停用旧条目。
+本版为直接重构，不读取、迁移或兼容旧版本偏好/API/入口。只启用当前这一份脚本；测试环境如有旧版请先停用，避免重复执行。新 namespace 为 `site-localization`；语言按站点保存至 GM 键 `site-localization:enabled:<id>`，悬浮球跨匹配域名共用 `site-localization:orb-position`。位置启动读取、实际拖动释放保存，不实时同步已打开页面。不使用页面 localStorage，也不将 GM 凭据存入网页。
 
 目前不配置自动更新地址；后续手动更新同一个脚本。正式发布远程入口后再设置固定的 `@updateURL` / `@downloadURL`。
 
@@ -23,7 +23,9 @@ A local, dependency-free userscript framework for site-specific Chinese UI local
 - [DOM 内核](<src/engine.js>)：文本节点和提示属性汉化、增量监听、中英切换、条件恢复。
 - [站点调度](<src/framework/runtime.js>)：URL 选择、SPA 路由响应、同站不重复安装、离开范围恢复、多配置冲突时拒绝启动。
 
-框架不包含 Tailscale 词条和元素选择器。技术全局 API 保留既有名称以避免无意义的兼容迁移。
+- [会话集成](<src/framework/site-session.js>)：连接纯 DOM 内核与私有 DockOrb 实例、GM 状态/恢复菜单、站点明确主题优先与系统回退。没有汉化以外的业务工具，没有成功反馈。
+
+框架不包含 Tailscale 词条和元素选择器。内核不创建 UI、不操作存储、不维护旧 singleton；会话统一清理观察器、订阅、菜单和悬浮球。DockOrb 在私有构建作用域内运行，不占用页面的 `GenericOrb`。固定 vendor 原样纳入单文件，构建验证摘要及完整许可；组件改进应在 DockOrb 仓库完成，不直接修改 vendor。
 
 ### 完整站点配置
 

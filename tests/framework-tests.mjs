@@ -5,7 +5,7 @@ import sites from '../src/sites/index.mjs';
 const source=await readFile(new URL('../src/framework/runtime.js',import.meta.url),'utf8');
 let installed=0,stopped=0;
 const listeners=new Map();
-const window={location:{href:'https://console.tailscale.com/admin/machines'},addEventListener:(e,f)=>listeners.set(e,f),removeEventListener:(e,f)=>{if(listeners.get(e)===f)listeners.delete(e);},installTranslator:config=>{installed++;return {id:config.id,stopped:false,stop(){if(!this.stopped){this.stopped=true;stopped++;}}};}};
+const window={location:{href:'https://console.tailscale.com/admin/machines'},addEventListener:(e,f)=>listeners.set(e,f),removeEventListener:(e,f)=>{if(listeners.get(e)===f)listeners.delete(e);},createSiteSession:config=>{installed++;return {id:config.id,stopped:false,stop(){if(!this.stopped){this.stopped=true;stopped++;}}};}};
 window.history={pushState(state,title,url){if(url)window.location.href=new URL(url,window.location.href).href;return 'preserved';},replaceState(state,title,url){if(url)window.location.href=new URL(url,window.location.href).href;}};
 const originalPush=window.history.pushState;
 vm.runInNewContext(source,{window,URL});

@@ -24,6 +24,9 @@
 !/tests/framework-tests.mjs
 !/tests/build.test.mjs
 !/tests/dom-fixture.js
+!/vendor/
+!/THIRD-PARTY-NOTICES.md
+!/tests/session-fixture.js
 !/dist/
 /dist/*
 !/dist/local-ui-zh.user.js

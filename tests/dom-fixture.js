@@ -18,7 +18,12 @@ window.runSiteLocalizationDomTests = async function (configuration) {
   const input=add('input','');input.value='Network';input.placeholder='Search by name, owner, tag, version...';
   const inputIdentity=input;let clicks=0;save.addEventListener('click',()=>clicks++);
   document.body.append(root);
+  const events=[];
   const api=window.installTranslator(configuration);
+  const unsubscribe=api.subscribe(state=>events.push(state));
+  api.subscribe(()=>{throw new Error('Listener failure must be isolated');});
+  check('engine creates no UI',!document.querySelector('[data-site-localization-ui]'));
+  check('engine has no legacy singleton',!window.__localUiTranslator);
   try {
     await wait(()=>save.textContent==='保存'&&uiCount.textContent==='1 台设备');
     check('UI exact translation',save.textContent==='保存');
@@ -38,7 +43,7 @@ window.runSiteLocalizationDomTests = async function (configuration) {
     api.toggle(false);check('external custom data is not overwritten',save.textContent==='CUSTOM_DATA');api.toggle(true);await wait(()=>dynamic.textContent==='取消');
     dynamic.remove();await wait(()=>dynamic.textContent==='Cancel');check('detached node restores',true);
     root.append(dynamic);await wait(()=>dynamic.textContent==='取消');check('reinserted node translates',true);
-    api.stop();check('stop restores dynamic original',dynamic.textContent==='Cancel');check('stop removes own overlay',!document.querySelector('[data-local-ui-translator]'));
+    api.stop();check('stop restores dynamic original',dynamic.textContent==='Cancel');check('stop notifies and clears subscriptions',events.at(-1)?.stopped===true); const eventCount=events.length;api.toggle();check('stopped engine emits no further changes',events.length===eventCount);unsubscribe();
     check('stop leaves custom data and input unchanged',save.textContent==='CUSTOM_DATA'&&input.value==='Network');
     return {passed:checks.length,total:checks.length,checks};
   } finally {api.stop();root.remove();}

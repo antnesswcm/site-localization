@@ -48,7 +48,7 @@
       if (translator) translator.stop();
       translator = null; active = null;
       if (next) {
-        try { translator = global.installTranslator(next); active = next; }
+        try { translator = global.createSiteSession(next); active = next; }
         catch (reason) { error = reason.message; }
       }
     }

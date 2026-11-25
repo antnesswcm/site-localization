@@ -1,0 +1,8 @@
+{
+  "name": "dock-orb",
+  "version": "0.3.0",
+  "repository": "https://github.com/antnesswcm/dock-orb",
+  "commit": "c2282e7596d3d9cb6c958a9d0699c41569daafa2",
+  "source": "https://raw.githubusercontent.com/antnesswcm/dock-orb/c2282e7596d3d9cb6c958a9d0699c41569daafa2/dist/generic-orb.js",
+  "sha256": "ef63b87a52eaddcb02d0c782680a5d11944bfd4cd0deb3c0179159ee680ee216"
+}
