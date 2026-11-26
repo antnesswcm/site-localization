@@ -15,7 +15,17 @@
       throw new TypeError('A trusted adapter with a nonempty id is required.');
     }
     const doc = global.document;
-    const exact = Object.assign(Object.create(null), adapter.exact || {});
+    // HTML layout whitespace is not part of a UI phrase's identity. Keep the
+    // untouched field in records so restoring still preserves its exact bytes.
+    const normalizeText = value => value.trim().replace(/\s+/g, ' ');
+    const exact = Object.create(null);
+    for (const [key, value] of Object.entries(adapter.exact || {})) {
+      const normalized = normalizeText(key);
+      if (Object.prototype.hasOwnProperty.call(exact, normalized) && exact[normalized] !== value) {
+        throw new TypeError('Conflicting translations after whitespace normalization.');
+      }
+      exact[normalized] = value;
+    }
     const uiSelector = adapter.uiSelector || DEFAULT_UI;
     const rootSelector = adapter.rootSelector || null;
     const excluded = [EXCLUDED, adapter.ignoreSelector, adapter.protectSelector].filter(Boolean).join(',');
@@ -81,7 +91,8 @@
     }
     function translate(value, element, field) {
       if (typeof value !== 'string' || !value.trim()) return value;
-      const text = value.trim();
+      const rawText = value.trim();
+      const text = normalizeText(rawText);
       let result = text;
       if (Object.prototype.hasOwnProperty.call(exact, text)) {
         const short = text.length <= 32 && text.split(/\s+/).length <= 3;
@@ -102,8 +113,8 @@
         }
       }
       if (typeof result !== 'string' || result === text) return value;
-      const start = value.indexOf(text);
-      return value.slice(0, start) + result + value.slice(start + text.length);
+      const start = value.indexOf(rawText);
+      return value.slice(0, start) + result + value.slice(start + rawText.length);
     }
     function processField(node, field) {
       counts.visited++;

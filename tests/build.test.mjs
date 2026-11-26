@@ -17,6 +17,9 @@ for(const [name,change] of [
  ['unknown theme root',c=>c.theme={root:'#app'}],['theme class list',c=>c.theme={root:'html',darkClass:'a b'}],
  ['invalid color scheme flag',c=>c.theme={root:'html',useColorScheme:1}],['unknown theme field',c=>c.theme={root:'html',guessBackground:true}]
 ])test('reject '+name,()=>{const c=good();change(c);assert.throws(()=>validateConfigurations([c]));});
+test('normalized phrase conflict rejected',()=>{const c=good();c.exact['Save  changes']='冲突';assert.throws(()=>validateConfigurations([c]));});
+test('empty normalized phrase rejected',()=>{const c=good();c.exact[' \n\t']='空';assert.throws(()=>validateConfigurations([c]));});
+test('same normalized phrase with same translation is safe',()=>{const c=good();c.exact['Save  changes']=c.exact['Save changes'];assert.equal(validateConfigurations([c])[0],c);});
 test('duplicate id rejected',()=>assert.throws(()=>validateConfigurations([good(),good()])));
 const artifact=await readFile(new URL('../dist/local-ui-zh.user.js',import.meta.url),'utf8');
 const engine=await readFile(new URL('../src/engine.js',import.meta.url),'utf8');

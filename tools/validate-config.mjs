@@ -15,6 +15,12 @@ export function validateConfigurations(configurations) {
     }
     if (config.attributes !== undefined && (!Array.isArray(config.attributes) || config.attributes.some(value=>!['title','placeholder','aria-label'].includes(value)))) throw new TypeError('Unsupported translation attributes.');
     if (config.exact !== undefined && (!config.exact || typeof config.exact !== 'object' || Array.isArray(config.exact) || Object.values(config.exact).some(value=>typeof value!=='string'))) throw new TypeError('Exact translations must be a string dictionary.');
+    const phrases = new Map();
+    for (const [key, translation] of Object.entries(config.exact || {})) {
+      const normalized = key.trim().replace(/\s+/g, ' ');
+      if (!normalized || (phrases.has(normalized) && phrases.get(normalized) !== translation)) throw new TypeError('Conflicting or empty normalized translation phrase.');
+      phrases.set(normalized, translation);
+    }
     if (config.theme !== undefined) {
       const t=config.theme;
       if (!t || typeof t!=='object' || Array.isArray(t) || !['html','body'].includes(t.root) || Object.keys(t).some(key=>!['root','darkClass','lightClass','useColorScheme'].includes(key))) throw new TypeError('Invalid theme declaration.');
