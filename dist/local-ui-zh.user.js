@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         站点汉化 / Site Localization
 // @namespace    site-localization
-// @version      0.4.0
+// @version      0.4.1
 // @description  完整站点配置的离线汉化；DockOrb 汉/原入口、拖动与主题
 // @license      MIT
 // @match        https://console.tailscale.com/admin/*
@@ -18,7 +18,7 @@
 "use strict";
 const dockOrbScope = Object.create(globalThis);
 (function(globalThis){
-/*! DockOrb 0.3.0
+/*! DockOrb 0.3.1
 MIT License
 
 Copyright (c) 2026 antnesswcm
@@ -749,7 +749,12 @@ button:focus-visible{outline:2px solid #ED6D8F;outline-offset:2px}
   panelClose.append(createIcon('x', { document: doc, size: 12 }));
   orb.append(inner);
   clip.append(orb);
-  shadow.append(style, clip, tools, dismiss, panel, feedbackLive);
+  // Let CSS resolve the fixed containing block, including reserved scrollbar gutters.
+  // Root clientWidth can include a stable gutter when no scrollbar is currently drawn.
+  const viewportProbe = el('div', 'viewport-probe');
+  viewportProbe.setAttribute('aria-hidden', 'true');
+  viewportProbe.style.cssText = 'position:fixed;inset:0;visibility:hidden;pointer-events:none;';
+  shadow.append(style, viewportProbe, clip, tools, dismiss, panel, feedbackLive);
   (options.parent || doc.body || doc.documentElement).append(host);
   let viewport, geometry;
   const feedback = createFeedbackController({
@@ -827,18 +832,19 @@ button:focus-visible{outline:2px solid #ED6D8F;outline-offset:2px}
     }
   }
   function visibleViewport() {
-    const root = doc.documentElement,
-      left = root.clientLeft,
-      top = root.clientTop,
-      right = left + root.clientWidth,
-      bottom = top + root.clientHeight,
+    const bounds = viewportProbe.getBoundingClientRect(),
+      left = bounds.left,
+      top = bounds.top,
+      right = bounds.right,
+      bottom = bounds.bottom,
       vv = win.visualViewport;
-    if (!vv) return { left, top, width: root.clientWidth, height: root.clientHeight };
+    if (!vv) return { left: 0, top: 0, width: bounds.width, height: bounds.height };
     const x = clamp(finite(vv.offsetLeft, 0), left, right),
       y = clamp(finite(vv.offsetTop, 0), top, bottom);
     return {
-      left: x,
-      top: y,
+      // CSS fixed offsets are relative to the containing block, not screen coordinates.
+      left: x - left,
+      top: y - top,
       width: Math.max(0, Math.min(right, finite(vv.offsetLeft, 0) + vv.width) - x),
       height: Math.max(0, Math.min(bottom, finite(vv.offsetTop, 0) + vv.height) - y),
     };
@@ -1405,6 +1411,7 @@ button:focus-visible{outline:2px solid #ED6D8F;outline-offset:2px}
   const observer =
     typeof win.ResizeObserver === 'function' ? new win.ResizeObserver(schedule) : null;
   observer?.observe(doc.documentElement);
+  observer?.observe(viewportProbe);
   const layoutObserver =
     typeof win.MutationObserver === 'function' ? new win.MutationObserver(schedule) : null;
   layoutObserver?.observe(doc.documentElement, {

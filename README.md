@@ -4,7 +4,7 @@
 
 A local, dependency-free userscript framework for site-specific Chinese UI localization. Develop the framework and complete site configurations separately; install one bundled userscript.
 
-版本 **0.4.0** · MIT（含 Lucide ISC / Feather MIT 图标许可）· 首个正式适配：**Tailscale 管理台**。悬浮入口使用固定离线 [DockOrb 0.3.0](<vendor/dockorb/manifest.json>)，不是第二个安装脚本。
+版本 **0.4.1** · MIT（含 Lucide ISC / Feather MIT 图标许可）· 首个正式适配：**Tailscale 管理台**。悬浮入口使用固定离线 [DockOrb 0.3.1](<vendor/dockorb/manifest.json>)，不是第二个安装脚本。
 
 ## 安装与更新
 
